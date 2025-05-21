@@ -26,6 +26,5 @@ Welcome to **AIbot** — a smart document-processing bot that leverages OpenAI e
 
 ```bash
 git clone https://github.com/tomerdolev/AIbot.git
-cd AIbot
 
 ### By Tome Dolev 
