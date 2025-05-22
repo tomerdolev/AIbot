@@ -1,4 +1,3 @@
-# Here I defined all the tools\packages we need: loading files, splitting texts, storing and creating embeddings
 from langchain.document_loaders import PyPDFLoader,Docx2txtLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter,SentenceSplitter, CharacterTextSplitter 
 from langchain.embeddings import OpenAIEmbeddings
@@ -10,7 +9,6 @@ from dotenv import load_dotenv
 load_dotenv()
 data_folder = "data"
 
-# Each segment is converted to a numeric vector that describes its meaning in natural language
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 if not api_key:
     raise ValueError("OPEN_AI_SECRET_KEY environment variable is not set")
