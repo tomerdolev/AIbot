@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-data_folder = "data"
 
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 if not api_key:
@@ -16,19 +15,21 @@ if not api_key:
 # Loop over all files in the data folder, load documents from folder
 def load_documents(data_folder):
     all_docs = []
-    try:
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
+    for filename in os.listdir(data_folder):
+        file_path = os.path.join(data_folder, filename)
+        try:
             if filename.endswith(".pdf"):
                 loader = PyPDFLoader(file_path)
-                documents = loader.load()
-                all_docs.extend(documents)
+                docs = loader.load()
+                all_docs.extend(docs)
             elif filename.endswith(".docx"):
                 loader = Docx2txtLoader(file_path)
-                documents = loader.load()
-                all_docs.extend(documents)
-    except Exception as e:
-        print(f"Error loading files: {e}")
+                docs = loader.load()
+                all_docs.extend(docs)
+            else:
+                print(f"Skipping unsupported file: {filename}")
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
     return all_docs
 
 # Chunking strategy: fixed size with overlap
@@ -43,40 +44,47 @@ def split_by_sentences(documents):
 
 # Chunking strategy: paragraph-based
 def split_by_paragraphs(documents):
-    text = "\n".join([doc.page_content for doc in documents])
+    all_chunks = []
     splitter = CharacterTextSplitter(separator="\n\n", chunk_size=500, chunk_overlap=100)
-    return splitter.create_documents([text])
+    for doc in documents:
+        chunks = splitter.split_text(doc.page_content)
+        all_chunks.extend([doc.__class__(page_content=chunk) for chunk in chunks])
+    return all_chunks
 
-# Choose which strategy to apply
-chunking_strategy = "paragraphs" #options: fixed, sentences, paragraphs
-if chunking_strategy not in ["fixed", "sentences", "paragraphs"]:
-    raise ValueError("Invalid chunking strategy selected.")
+def create_embeddings_and_store(docs, api_key, save_path="vector_store"):
+    embedding = OpenAIEmbeddings(openai_api_key=api_key)
+    db = FAISS.from_documents(docs, embedding)
+    db.save_local(save_path)
+    return db
 
-print(f"Using chunking strategy: {chunking_strategy}")
-all_docs = load_documents(data_folder)
+#Loads documents, splits text, creates embeddings, and saves vector store.
+# Supports different chunking strategies, Default chunking is paragraphs
+def process_documents(data_folder, chunking_strategy="paragraphs"):
+    all_docs = load_documents(data_folder)
+    if not all_docs:
+        raise ValueError("No documents found in the specified folder.")
+    
+    if chunking_strategy == "fixed":
+        docs = split_by_fixed_chunks(all_docs)
+    elif chunking_strategy == "sentences":
+        docs = split_by_sentences(all_docs)
+    elif chunking_strategy == "paragraphs":
+        docs = split_by_paragraphs(all_docs)
+    else:
+        raise ValueError("Invalid chunking strategy selected.")
 
-if chunking_strategy == "fixed":
-    docs = split_by_fixed_chunks(all_docs)
-elif chunking_strategy == "sentences":
-    docs = split_by_sentences(all_docs)
-elif chunking_strategy == "paragraphs":
-    docs = split_by_paragraphs(all_docs)
-else:
-    raise ValueError("Invalid chunking strategy selected.")
+    if not docs:
+        raise ValueError("No documents created after splitting.")
 
-if not docs:
-    raise ValueError("No documents created after splitting.")
+    # Create embeddings and store them in a vector store
+    db = create_embeddings_and_store(docs, api_key)
+    return db
 
-#create embadding and vector data base
-embedding = OpenAIEmbeddings(openai_api_key=api_key)
-db = FAISS.from_documents(docs, embedding)
-db.save_local("vector_store")
-
-print("Files have been processed and saved.")
-
+#Just for testing purposes
+docs = split_by_paragraphs(all_docs)
+db = create_embeddings_and_store(docs, api_key)
 # Perform a query on the vector database
 query = "Explain to me what a linear equation is?"
-
 # Ranks the results by semantic similarity and returns the most similar segments
 result = db.similarity_search(query, k=3)  # Search for the 3 closest results
 
