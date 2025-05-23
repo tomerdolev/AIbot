@@ -12,7 +12,7 @@ api_key = os.getenv("OPEN_AI_SECRET_KEY")
 if not api_key:
     raise ValueError("OPEN_AI_SECRET_KEY environment variable is not set")
 
-# Loop over all files in the data folder, load documents from folder
+# Loop over all files in the data folder
 def load_documents(data_folder):
     all_docs = []
     for filename in os.listdir(data_folder):
@@ -81,15 +81,14 @@ def process_documents(data_folder, chunking_strategy="paragraphs"):
     return db
 
 #Just for testing purposes
-docs = split_by_paragraphs(all_docs)
-db = create_embeddings_and_store(docs, api_key)
-# Perform a query on the vector database
-query = "Explain to me what a linear equation is?"
-# Ranks the results by semantic similarity and returns the most similar segments
-result = db.similarity_search(query, k=3)  # Search for the 3 closest results
+if __name__ == "__main__":
+    data_folder = "./data"  # כאן שמים את הקבצים שברצונך לעבד
+    db = process_documents(data_folder, chunking_strategy="paragraphs")
 
-# Loop to print the 3 most relevant answers
-for i, doc in enumerate(result):
-    print(f"--- Result {i+1} ---")
-    print(doc.page_content)
-    print()
+    query = "Explain to me what a linear equation is?"
+    results = db.similarity_search(query, k=3)
+
+    for i, doc in enumerate(results):
+        print(f"--- Result {i+1} ---")
+        print(doc.page_content)
+        print()
