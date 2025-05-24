@@ -19,18 +19,6 @@ Welcome to *AIbot* — an intelligent document-processing tool that uses OpenAI 
 
 ---
 
-## 📦 Usage
-
-To process documents and build a vector store:
-
-Place your PDF and DOCX files inside the ./data folder.
-
-Run the main script:
-```bash
-python main.py
-
-```
-
 ## 🚀 Setup
 
 ### 1. Clone the repository and move into the project directory:
@@ -39,7 +27,35 @@ python main.py
 git clone https://github.com/tomerdolev/AIbot.git
 cd AIbot
 ```
+### 2. Set up your API key:
+Create a file called .env in the root directory and add your OpenAI API key:
 
+```bash
+OPEN_AI_SECRET_KEY=your_openai_key_here
+```
+
+---
+
+## 📦 Usage
+
+To process documents and build a vector store:
+
+Place your .pdf or .docx files in the ./data folder.
+
+Run the main script:
+```bash
+python main.py
+```
+
+This will:
+
+- Load your documents
+- Split them based on the selected strategy (default: paragraph)
+- Generate embeddings
+- Save them in a FAISS vector store
+
+  ---
+  
 ## 📂 Project Structure
 
 ```bash
