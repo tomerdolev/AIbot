@@ -52,3 +52,11 @@ AIbot/
 └── README.md             # Project overview
 ```
 
+## 🔮 Future Improvements
+
+- Add support for additional file types (e.g., TXT, HTML)
+- Add a web interface (Streamlit or Gradio)
+- Enable persistent querying across sessions
+- Integrate metadata for document filtering (e.g., titles, dates)
+
+
