@@ -1,9 +1,15 @@
-from langchain.document_loaders import PyPDFLoader,Docx2txtLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter,SentenceSplitter, CharacterTextSplitter 
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
 import os
 from dotenv import load_dotenv
+import nltk
+from nltk.tokenize import sent_tokenize
+from langchain.document_loaders import PyPDFLoader,Docx2txtLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter 
+from langchain_openai import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.docstore.document import Document
+
+# Ensure necessary NLTK resources are downloaded ( for sentence splitting)
+nltk.download('punkt')
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,6 +19,7 @@ if not api_key:
     raise ValueError("OPEN_AI_SECRET_KEY environment variable is not set")
 
 # Loop over all files in the data folder
+data_folder = "data"
 def load_documents(data_folder):
     all_docs = []
     for filename in os.listdir(data_folder):
@@ -39,8 +46,12 @@ def split_by_fixed_chunks(documents):
 
 # Chunking strategy: sentence-based
 def split_by_sentences(documents):
-    splitter = SentenceSplitter()
-    return splitter.split_documents(documents)
+    all_chunks = []
+    for doc in documents:
+        sentences = sent_tokenize(doc.page_content)
+        for sentence in sentences:
+            all_chunks.append(doc.__class__(page_content=sentence))
+    return all_chunks
 
 # Chunking strategy: paragraph-based
 def split_by_paragraphs(documents):
@@ -48,7 +59,8 @@ def split_by_paragraphs(documents):
     splitter = CharacterTextSplitter(separator="\n\n", chunk_size=500, chunk_overlap=100)
     for doc in documents:
         chunks = splitter.split_text(doc.page_content)
-        all_chunks.extend([doc.__class__(page_content=chunk) for chunk in chunks])
+        for chunk in chunks:
+            all_chunks.append(Document(page_content=chunk))
     return all_chunks
 
 def create_embeddings_and_store(docs, api_key, save_path="vector_store"):
